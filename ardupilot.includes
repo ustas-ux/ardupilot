@@ -1,3 +1,5 @@
+/usr/include
+/usr/include/c++/4.8/tr1
 AntennaTracker
 APMrover2
 ArduCopter
@@ -126,3 +128,4 @@ Tools/Linux_HAL_Essentials/pwmpru
 Tools/Linux_HAL_Essentials/rcinpru
 Tools/Replay
 Tools/VARTest
+Build.ArduPlane
