@@ -50,17 +50,25 @@ AP_GPS gps;
 
 void setup()
 {
-    hal.console->println("GPS AUTO library test");
+    hal.console->println("GPS AUTO library test before");
+    hal.console->println("GPS AUTO library test ++");
 
     // initialise the leds
     board_led.init();
+
+    hal.console->println("GPS AUTO library test after");
 }
 
 void loop()
 {
     static uint32_t last_msg_ms;
     gps.update();
+    hal.console->println("after update");
+
+    hal.console->printf("STATUS: %u\n", gps.status());
+
     if (last_msg_ms != gps.last_message_time_ms()) {
+        hal.console->println("after if");
         last_msg_ms = gps.last_message_time_ms();
         const Location &loc = gps.location();
         hal.console->print("Lat: ");
@@ -76,7 +84,8 @@ void loop()
                             (unsigned long)gps.time_week_ms(),
                             gps.status());
     }
-    hal.scheduler->delay(10);
+   // hal.console->println("before delay %u", last_msg_ms);
+    hal.scheduler->delay(100);
 }
 
 AP_HAL_MAIN();
