@@ -131,3 +131,4 @@ Tools/VARTest
 Build.ArduPlane
 libraries/AP_GPS/examples/GPS_AUTO_test
 libraries/AP_Compass/examples/AP_Compass_test
+libraries/AP_GPS/examples/GPS_UBLOX_passthrough

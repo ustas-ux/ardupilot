@@ -1161,3 +1161,4 @@ ArduPlane/system.pde
 ArduPlane/takeoff.pde
 ArduPlane/test.pde
 libraries/AP_Compass/examples/AP_Compass_test/AP_Compass_test.pde
+libraries/AP_GPS/examples/GPS_UBLOX_passthrough/GPS_UBLOX_passthrough.pde
