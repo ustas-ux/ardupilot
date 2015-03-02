@@ -1162,3 +1162,8 @@ ArduPlane/takeoff.pde
 ArduPlane/test.pde
 libraries/AP_Compass/examples/AP_Compass_test/AP_Compass_test.pde
 libraries/AP_GPS/examples/GPS_UBLOX_passthrough/GPS_UBLOX_passthrough.pde
+libraries/AP_Baro/examples/BARO_generic/BARO_generic.pde
+libraries/AC_AttitudeControl/examples/AC_AttitudeControl_test/AC_AttitudeControl_test.pde
+libraries/AP_Common/examples/AP_Common/AP_Common.pde
+libraries/AP_InertialSensor/examples/INS_generic/INS_generic.pde
+libraries/AP_HAL/examples/UART_test/UART_test.pde

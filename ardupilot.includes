@@ -132,3 +132,8 @@ Build.ArduPlane
 libraries/AP_GPS/examples/GPS_AUTO_test
 libraries/AP_Compass/examples/AP_Compass_test
 libraries/AP_GPS/examples/GPS_UBLOX_passthrough
+libraries/AP_Baro/examples/BARO_generic
+libraries/AC_AttitudeControl/examples/AC_AttitudeControl_test
+libraries/AP_Common/examples/AP_Common
+libraries/AP_InertialSensor/examples/INS_generic
+libraries/AP_HAL/examples/UART_test

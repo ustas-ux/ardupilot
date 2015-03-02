@@ -36,6 +36,7 @@
 #include <AP_NavEKF.h>
 #include <AP_Rally.h>
 #include <AP_Scheduler.h>
+#include <AP_SerialManager.h>
 #include <AP_BattMonitor.h>
 
 const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
@@ -44,6 +45,7 @@ const AP_HAL::HAL& hal = AP_HAL_BOARD_DRIVER;
 AP_BoardLED board_led;
 
 AP_GPS gps;
+//static AP_SerialManager serial_manager;
 
 #define T6 1000000
 #define T7 10000000
@@ -52,7 +54,7 @@ void setup()
 {
     hal.console->println("GPS AUTO library test before");
     hal.console->println("GPS AUTO library test ++");
-
+	//sgps.init(NULL, serial_manager);
     // initialise the leds
     board_led.init();
 
@@ -61,7 +63,7 @@ void setup()
 
 void loop()
 {
-    static uint32_t last_msg_ms;
+	static uint32_t last_msg_ms = 0;
     gps.update();
     hal.console->println("after update");
 
@@ -85,7 +87,7 @@ void loop()
                             gps.status());
     }
    // hal.console->println("before delay %u", last_msg_ms);
-    hal.scheduler->delay(100);
+	hal.scheduler->delay(10000);
 }
 
 AP_HAL_MAIN();

@@ -39,6 +39,7 @@
 #include <AC_AttitudeControl.h>
 #include <AC_PosControl.h>
 #include <AP_NavEKF.h>
+#include <AP_Rally.h>
 #include <AP_Nav_Common.h>
 #include <AP_BattMonitor.h>
 
