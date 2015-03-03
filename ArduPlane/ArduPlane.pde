@@ -1388,6 +1388,13 @@ static void update_flight_mode(void)
         // or we just want to fly around in a gentle circle w/o GPS,
         // holding altitude at the altitude we set when we
         // switched into the mode
+		//hal.console->println("switch to CIRCLE mode");
+		//gcs_send_text_P(SEVERITY_LOW, PSTR("test gcs_send_text_P CIRCLE SEVERITY_LOW"));
+		//gcs_send_text_P(SEVERITY_MEDIUM, PSTR("test gcs_send_text_P CIRCLE SEVERITY_MEDIUM"));
+		gcs_send_text_P(SEVERITY_HIGH, PSTR("test gcs_send_text_P CIRCLE SEVERITY_HIGH"));
+		//gcs_send_text_P(SEVERITY_CRITICAL, PSTR("test gcs_send_text_P CIRCLE SEVERITY_CRITICAL"));
+		//cs_send_text_P(SEVERITY_USER_RESPONSE, PSTR("test gcs_send_text_P CIRCLE SEVERITY_USER_RESPONSE"));
+		//hal.console->println("switch to CIRCLE mode");
         nav_roll_cd  = roll_limit_cd / 3;
         update_load_factor();
         calc_nav_pitch();
