@@ -1,25 +1,25 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
-/// @file	AC_PID.h
+/// @file	AC_PI_2D.h
 /// @brief	Generic PID algorithm, with EEPROM-backed storage of constants.
 
-#ifndef __AC_PID_H__
-#define __AC_PID_H__
+#ifndef __AC_PI_2D_H__
+#define __AC_PI_2D_H__
 
 #include <AP_Common.h>
 #include <AP_Param.h>
 #include <stdlib.h>
 #include <math.h>
 
-#define AC_PID_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
+#define AC_PI_2D_FILT_HZ_DEFAULT  20.0f   // default input filter frequency
 
-/// @class	AC_PID
+/// @class	AC_PI_2D
 /// @brief	Copter PID control class
-class AC_PID {
+class AC_PI_2D {
 public:
 
     // Constructor for PID
-    AC_PID(float initial_p, float initial_i, float initial_d, float initial_imax, float initial_filt_hz, float dt);
+    AC_PI_2D(float initial_p, float initial_i, float initial_imax, float initial_filt_hz, float dt);
 
     // set_dt - set time step in seconds
     void        set_dt(float dt);
@@ -27,22 +27,17 @@ public:
     // set_filt_hz - set input filter hz
     void        set_filt_hz(float hz);
 
-    // set_input_filter_all - set input to PID controller
+    // set_input - set input to PID controller
     //  input is filtered before the PID controllers are run
     //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_all(float input);
+    void        set_input(const Vector2f &input);
+    void        set_input(const Vector3f &input) { set_input(Vector2f(input.x, input.y)); }
 
-    // set_input_filter_d - set input to PID controller
-    //  only input to the D portion of the controller is filtered
-    //  this should be called before any other calls to get_p, get_i or get_d
-    void        set_input_filter_d(float input);
-
-    // get_pid - get results from pid controller
-    float       get_pid();
-    float       get_pi();
-    float       get_p() const;
-    float       get_i();
-    float       get_d() const;
+    // get_pi - get results from pid controller
+    Vector2f    get_pi();
+    Vector2f    get_p() const;
+    Vector2f    get_i();
+    Vector2f    get_i_shrink();   // get_i but do not allow integrator to grow (it may shrink)
 
     // reset_I - reset the integrator
     void        reset_I();
@@ -57,12 +52,11 @@ public:
     void        save_gains();
 
     /// operator function call for easy initialisation
-    void operator() (float p, float i, float d, float imaxval, float input_filt_hz, float dt );
+    void operator() (float p, float i, float imaxval, float input_filt_hz, float dt );
 
     // get accessors
     float       kP() const { return _kp.get(); }
     float       kI() const { return _ki.get(); }
-    float       kD() const { return _kd.get(); }
     float       imax() const { return _imax.get(); }
     float       filt_hz() const { return _filt_hz.get(); }
     float       get_filt_alpha() const { return _filt_alpha; }
@@ -70,12 +64,12 @@ public:
     // set accessors
     void        kP(const float v) { _kp.set(v); }
     void        kI(const float v) { _ki.set(v); }
-    void        kD(const float v) { _kd.set(v); }
     void        imax(const float v) { _imax.set(fabs(v)); }
     void        filt_hz(const float v) { _filt_hz.set(fabs(v)); }
 
-    float       get_integrator() const { return _integrator; }
-    void        set_integrator(float i) { _integrator = i; }
+    Vector2f    get_integrator() const { return _integrator; }
+    void        set_integrator(const Vector2f &i) { _integrator = i; }
+    void        set_integrator(const Vector3f &i) { _integrator.x = i.x; _integrator.y = i.y; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -88,7 +82,6 @@ protected:
     // parameters
     AP_Float        _kp;
     AP_Float        _ki;
-    AP_Float        _kd;
     AP_Float        _imax;
     AP_Float        _filt_hz;                   // PID Input filter frequency in Hz
 
@@ -98,11 +91,10 @@ protected:
     } _flags;
 
     // internal variables
-    float           _dt;                        // timestep in seconds
-    float           _integrator;                // integrator value
-    float           _input;                // last input for derivative
-    float           _derivative;           // last derivative for low-pass filter
-    float           _filt_alpha;          // input filter alpha
+    float           _dt;            // timestep in seconds
+    Vector2f        _integrator;    // integrator value
+    Vector2f        _input;         // last input for derivative
+    float           _filt_alpha;    // input filter alpha
 };
 
-#endif // __AC_PID_H__
+#endif // __AC_PI_2D_H__
