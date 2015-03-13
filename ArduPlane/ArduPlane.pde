@@ -1010,7 +1010,7 @@ static void one_second_loop()
     if (should_log(MASK_LOG_CURRENT))
         Log_Write_Current();
 
-    // send a heartbeat
+	// send a heartbeat
     gcs_send_message(MSG_HEARTBEAT);
 
     // make it possible to change control channel ordering at runtime
@@ -1034,6 +1034,9 @@ static void one_second_loop()
         terrain.log_terrain_data(DataFlash);
     }
 #endif
+
+	//gcs_send_text_P(SEVERITY_HIGH, PSTR("one_second_loop ();\n"));
+
 }
 
 static void log_perf_info()

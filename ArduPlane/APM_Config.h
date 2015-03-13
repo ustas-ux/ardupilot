@@ -21,14 +21,19 @@
  *
  */
 
+//#define HIL_MODE            HIL_MODE_ATTITUDE
+//#define HIL_MODE				HIL_MODE_SENSORS
+//#define HIL_PORT				0
+//#define HIL_PROTOCOL			HIL_PROTOCOL_XPLANE
+
 //Select Debug Terminal as the GCS to use:
-#define GCS_PROTOCOL        GCS_PROTOCOL_DEBUGTERMINAL
-#define MAV_SYSTEM_ID		8
+//#define GCS_PROTOCOL        GCS_PROTOCOL_DEBUGTERMINAL
+//#define MAV_SYSTEM_ID		8
 
 //Use the telemetry port for the Debug Terminal interface:
 //(selecting 0 here would cause the USB serial port to be used instead)
-#define GCS_PORT            3
+//#define GCS_PORT            3
 
 //Set the baud rate for the telemetry port to match your XBee setup:
-#define SERIAL3_BAUD        115200
+//#define SERIAL3_BAUD        115200
 
