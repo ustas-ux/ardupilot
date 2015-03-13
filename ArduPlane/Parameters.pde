@@ -38,6 +38,15 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(sysid_my_gcs,           "SYSID_MYGCS",    255),
 
+#if CLI_ENABLED == ENABLED
+    // @Param: CLI_ENABLED
+    // @DisplayName: CLI Enable
+    // @Description: This enables/disables the checking for three carriage returns on telemetry links on startup to enter the diagnostics command line interface
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(cli_enabled,            "CLI_ENABLED",    0),
+#endif
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
@@ -596,6 +605,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
+    // @Param: INITIAL_MODE
+    // @DisplayName: Initial flight mode
+    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,15:Guided
+    // @User: Advanced
+    GSCALAR(initial_mode,        "INITIAL_MODE",     MANUAL),
+
     // @Param: LIM_ROLL_CD
     // @DisplayName: Maximum Bank Angle
     // @Description: The maximum commanded bank angle in either direction
@@ -882,7 +898,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Standard
     GSCALAR(inverted_flight_ch,     "INVERTEDFLT_CH", 0),
 
-#if HIL_MODE != HIL_MODE_DISABLED
+    // @Param: HIL_MODE
+    // @DisplayName: HIL mode enable
+    // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    GSCALAR(hil_mode,               "HIL_MODE",      0),
+
     // @Param: HIL_SERVOS
     // @DisplayName: HIL Servos enable
     // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
@@ -898,7 +920,6 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
-#endif
 
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
@@ -906,6 +927,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @Values: 0:Disable,1:Enable
     // @User: Standard
     GSCALAR(rtl_autoland,         "RTL_AUTOLAND",   0),
+
+    // @Param: RC_TRIM_AT_START
+    // @DisplayNmae: RC Trims auto set at start.
+    // @Description: Automatically set roll/pitch trim from Tx at ground start. This makes the assumption that the RC transmitter has not been altered since trims were last captured.
+    // @Values: 0:Disable,1:Enable
+    // @User: Standard
+    GSCALAR(trim_rc_at_start,     "TRIM_RC_AT_START",    1), 
 
     // barometer ground calibration. The GND_ prefix is chosen for
     // compatibility with previous releases of ArduPlane

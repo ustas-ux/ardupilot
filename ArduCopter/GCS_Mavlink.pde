@@ -43,7 +43,7 @@ static NOINLINE void send_heartbeat(mavlink_channel_t chan)
     uint32_t custom_mode = control_mode;
 
     // set system as critical if any failsafe have triggered
-    if (failsafe.radio || failsafe.battery || failsafe.gps || failsafe.gcs || failsafe.ekf)  {
+    if (failsafe.radio || failsafe.battery || failsafe.gcs || failsafe.ekf)  {
         system_status = MAV_STATE_CRITICAL;
     }
 
@@ -197,7 +197,7 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
     if (g.compass_enabled && compass.healthy(0) && ahrs.use_compass()) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_MAG;
     }
-    if (gps.status() > AP_GPS::NO_GPS && (!gps_glitch.glitching()||ap.usb_connected)) {
+    if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_GPS;
     }
 #if OPTFLOW == ENABLED
@@ -244,6 +244,12 @@ static NOINLINE void send_extended_status1(mavlink_channel_t chan)
         break;
     }
 #endif
+
+    if (!ap.initialised || ins.calibrating()) {
+        // while initialising the gyros and accels are not enabled
+        control_sensors_enabled &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+        control_sensors_health &= ~(MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL);
+    }
 
     mavlink_msg_sys_status_send(
         chan,
@@ -619,6 +625,12 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_EKF_STATUS_REPORT:
+#if AP_AHRS_NAVEKF_AVAILABLE
+        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+        ahrs.get_NavEKF().send_status_report(chan);
+#endif
+        break;
 
     case MSG_FENCE_STATUS:
     case MSG_WIND:
@@ -848,6 +860,7 @@ GCS_MAVLINK::data_stream_send(void)
         send_message(MSG_MOUNT_STATUS);
         send_message(MSG_OPTICAL_FLOW);
         send_message(MSG_GIMBAL_REPORT);
+        send_message(MSG_EKF_STATUS_REPORT);
     }
 }
 
@@ -1116,6 +1129,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
 
         case MAV_CMD_PREFLIGHT_CALIBRATION:
+            // exit immediately if armed
+            if (motors.armed()) {
+                result = MAV_RESULT_FAILED;
+                break;
+            }
             if (packet.param1 == 1) {
                 // gyro offset calibration
                 ins.init_gyro();
@@ -1123,6 +1141,8 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 if (ins.gyro_calibrated_ok_all()) {
                     ahrs.reset_gyro_drift();
                     result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             } else if (packet.param3 == 1) {
                 // fast barometer calibration
@@ -1134,11 +1154,13 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
                 // 3d accel calibration
                 float trim_roll, trim_pitch;
                 // this blocks
-                AP_InertialSensor_UserInteract_MAVLink interact(chan);
+                AP_InertialSensor_UserInteract_MAVLink interact(this);
                 if(ins.calibrate_accel(&interact, trim_roll, trim_pitch)) {
                     // reset ahrs's trim to suggested values from calibration routine
                     ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
                     result = MAV_RESULT_ACCEPTED;
+                } else {
+                    result = MAV_RESULT_FAILED;
                 }
             } else if (packet.param6 == 1) {
                 // compassmot calibration
@@ -1649,7 +1671,7 @@ static void gcs_check_input(void)
     for (uint8_t i=0; i<num_gcs; i++) {
         if (gcs[i].initialised) {
 #if CLI_ENABLED == ENABLED
-            gcs[i].update(run_cli);
+            gcs[i].update(g.cli_enabled==1?run_cli:NULL);
 #else
             gcs[i].update(NULL);
 #endif

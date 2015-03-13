@@ -83,6 +83,13 @@ static void init_ardupilot()
     //
     load_parameters();
 
+    if (g.hil_mode == 1) {
+        // set sensors to HIL mode
+        ins.set_hil_mode();
+        compass.set_hil_mode();
+        barometer.set_hil_mode();
+    }
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_PX4
     // this must be before BoardConfig.init() so if
     // BRD_SAFETYENABLE==0 then we don't have safety off yet
@@ -201,13 +208,15 @@ static void init_ardupilot()
     hal.scheduler->register_timer_failsafe(failsafe_check, 1000);
 
 #if CLI_ENABLED == ENABLED
-    const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
-    cliSerial->println_P(msg);
-    if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
-        gcs[1].get_uart()->println_P(msg);
-    }
-    if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
-        gcs[2].get_uart()->println_P(msg);
+    if (g.cli_enabled == 1) {
+        const prog_char_t *msg = PSTR("\nPress ENTER 3 times to start interactive setup\n");
+        cliSerial->println_P(msg);
+        if (gcs[1].initialised && (gcs[1].get_uart() != NULL)) {
+            gcs[1].get_uart()->println_P(msg);
+        }
+        if (num_gcs > 2 && gcs[2].initialised && (gcs[2].get_uart() != NULL)) {
+            gcs[2].get_uart()->println_P(msg);
+        }
     }
 #endif // CLI_ENABLED
 
@@ -218,7 +227,7 @@ static void init_ardupilot()
     // choose the nav controller
     set_nav_controller();
 
-    set_mode(MANUAL);
+    set_mode((FlightMode)g.initial_mode.get());
 
     // set the correct flight mode
     // ---------------------------
@@ -255,11 +264,13 @@ static void startup_ground(void)
     //INS ground start
     //------------------------
     //
-    startup_INS_ground(false);
+    startup_INS_ground();
 
     // read the radio to set trims
     // ---------------------------
-    trim_radio();               // This was commented out as a HACK.  Why?  I don't find a problem.
+    if (g.trim_rc_at_start != 0) {
+        trim_radio();
+    }
 
     // Save the settings for in-air restart
     // ------------------------------------
@@ -496,23 +507,19 @@ static void check_short_failsafe()
 }
 
 
-static void startup_INS_ground(bool do_accel_init)
+static void startup_INS_ground(void)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
-        hal.scheduler->delay(1000);
+    if (g.hil_mode == 1) {
+        while (barometer.get_last_update() == 0) {
+            // the barometer begins updating when we get the first
+            // HIL_STATE message
+            gcs_send_text_P(SEVERITY_LOW, PSTR("Waiting for first HIL_STATE message"));
+            hal.scheduler->delay(1000);
+        }
     }
-    
-    // set INS to HIL mode
-    ins.set_hil_mode();
-    barometer.set_hil_mode();
-#endif
 
     AP_InertialSensor::Start_style style;
-    if (g.skip_gyro_cal && !do_accel_init) {
+    if (g.skip_gyro_cal) {
         style = AP_InertialSensor::WARM_START;
         arming.set_skip_gyro_cal(true);
     } else {
@@ -530,10 +537,6 @@ static void startup_INS_ground(bool do_accel_init)
     ahrs.set_wind_estimation(true);
 
     ins.init(style, ins_sample_rate);
-    if (do_accel_init) {
-        ins.init_accel();
-        ahrs.set_trim(Vector3f(0, 0, 0));
-    }
     ahrs.reset();
 
     // read Baro pressure at ground
@@ -649,14 +652,12 @@ static void print_comma(void)
  */
 static void servo_write(uint8_t ch, uint16_t pwm)
 {
-#if HIL_MODE != HIL_MODE_DISABLED
-    if (!g.hil_servos) {
+    if (g.hil_mode==1 && !g.hil_servos) {
         if (ch < 8) {
             RC_Channel::rc_channel(ch)->radio_out = pwm;
         }
         return;
     }
-#endif
     hal.rcout->enable_ch(ch);
     hal.rcout->write(ch, pwm);
 }

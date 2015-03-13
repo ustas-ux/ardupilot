@@ -31,6 +31,7 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _dt_xy(POSCONTROL_DT_50HZ),
     _last_update_xy_ms(0),
     _last_update_z_ms(0),
+    _throttle_hover(POSCONTROL_THROTTLE_HOVER),
     _speed_down_cms(POSCONTROL_SPEED_DOWN),
     _speed_up_cms(POSCONTROL_SPEED_UP),
     _speed_cms(POSCONTROL_SPEED),
@@ -42,20 +43,18 @@ AC_PosControl::AC_PosControl(const AP_AHRS& ahrs, const AP_InertialNav& inav,
     _roll_target(0.0f),
     _pitch_target(0.0f),
     _alt_max(0.0f),
-    _distance_to_target(0.0f)
+    _distance_to_target(0.0f),
+    _accel_target_jerk_limited(0.0f,0.0f),
+    _accel_target_filtered(0.0f,0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
     // initialise flags
-#if HAL_CPU_CLASS >= HAL_CPU_CLASS_150
-    _flags.slow_cpu = false;
-#else
-    _flags.slow_cpu = true;
-#endif
     _flags.recalc_leash_xy = true;
     _flags.recalc_leash_z = true;
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
     _flags.reset_rate_to_accel_z = true;
     _flags.reset_accel_to_throttle = true;
 }
@@ -517,6 +516,7 @@ void AC_PosControl::init_xy_controller(bool reset_I)
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
 }
 
 /// update_xy_controller - run the horizontal position controller - should be called at 100hz or higher
@@ -528,7 +528,7 @@ void AC_PosControl::update_xy_controller(xy_mode mode, float ekfNavVelGainScaler
     _last_update_xy_ms = now;
 
     // sanity check dt - expect to be called faster than ~5hz
-    if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    if (dt > POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
         dt = 0.0f;
     }
 
@@ -568,6 +568,7 @@ void AC_PosControl::init_vel_controller_xyz()
     // flag reset required in rate to accel step
     _flags.reset_desired_vel_to_pos = true;
     _flags.reset_rate_to_accel_xy = true;
+    _flags.reset_accel_to_lean_xy = true;
 
     // set target position in xy axis
     const Vector3f& curr_pos = _inav.get_position();
@@ -589,7 +590,7 @@ void AC_PosControl::update_vel_controller_xyz(float ekfNavVelGainScaler)
     float dt = (now - _last_update_xy_ms) / 1000.0f;
 
     // sanity check dt - expect to be called faster than ~5hz
-    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS) {
+    if (dt >= POSCONTROL_ACTIVE_TIMEOUT_MS*1.0e-3f) {
         dt = 0.0f;
     }
 
@@ -797,40 +798,39 @@ void AC_PosControl::rate_to_accel_xy(float dt, float ekfNavVelGainScaler)
 ///    converts desired accelerations provided in lat/lon frame to roll/pitch angles
 void AC_PosControl::accel_to_lean_angles(float dt, float ekfNavVelGainScaler)
 {
-    float accel_north = _accel_target.x;
-    float accel_east = _accel_target.y;
     float accel_right, accel_forward;
     float lean_angle_max = _attitude_control.lean_angle_max();
 
-    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
-    static float last_accel_north = 0.0f;
-    static float last_accel_east = 0.0f;
-    float max_delta_accel = dt * 1700.0f;
-    if (accel_north - last_accel_north > max_delta_accel) {
-        accel_north = last_accel_north + max_delta_accel;
-    } else if (accel_north - last_accel_north < -max_delta_accel) {
-        accel_north = last_accel_north - max_delta_accel;
+    // reset accel to current desired acceleration
+    if (_flags.reset_accel_to_lean_xy) {
+        _accel_target_jerk_limited.x = _accel_target.x;
+        _accel_target_jerk_limited.y = _accel_target.y;
+        _accel_target_filtered.x = _accel_target.x;
+        _accel_target_filtered.y = _accel_target.y;
+        _flags.reset_accel_to_lean_xy = false;
     }
-    last_accel_north = accel_north;
 
-    if (accel_east - last_accel_east > max_delta_accel) {
-        accel_east = last_accel_east + max_delta_accel;
-    } else if (accel_east - last_accel_east < -max_delta_accel) {
-        accel_east = last_accel_east - max_delta_accel;
+    // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
+    float max_delta_accel = dt * POSCONTROL_JERK_LIMIT_CMSSS;
+
+    Vector2f accel_in(_accel_target.x, _accel_target.y);
+    Vector2f accel_change = accel_in-_accel_target_jerk_limited;
+    float accel_change_length = accel_change.length();
+
+    if(accel_change_length > max_delta_accel) {
+        accel_change *= max_delta_accel/accel_change_length;
     }
-    last_accel_east = accel_east;
+    _accel_target_jerk_limited += accel_change;
 
     // 5Hz lowpass filter on NE accel
-    float freq_cut = 5.0f * ekfNavVelGainScaler;
+    float freq_cut = POSCONTROL_ACCEL_FILTER_HZ * ekfNavVelGainScaler;
     float alpha = constrain_float(dt/(dt + 1.0f/(2.0f*(float)M_PI*freq_cut)),0.0f,1.0f);
-    static float accel_north_filtered = 0.0f;
-    static float accel_east_filtered = 0.0f;
-    accel_north_filtered += alpha * (accel_north - accel_north_filtered);
-    accel_east_filtered  += alpha * (accel_east - accel_east_filtered);
+    _accel_target_filtered.x += alpha * (_accel_target_jerk_limited.x - _accel_target_filtered.x);
+    _accel_target_filtered.y  += alpha * (_accel_target_jerk_limited.y - _accel_target_filtered.y);
 
     // rotate accelerations into body forward-right frame
-    accel_forward = accel_north_filtered*_ahrs.cos_yaw() + accel_east_filtered*_ahrs.sin_yaw();
-    accel_right = -accel_north_filtered*_ahrs.sin_yaw() + accel_east_filtered*_ahrs.cos_yaw();
+    accel_forward = _accel_target_filtered.x*_ahrs.cos_yaw() + _accel_target_filtered.y*_ahrs.sin_yaw();
+    accel_right = -_accel_target_filtered.x*_ahrs.sin_yaw() + _accel_target_filtered.y*_ahrs.cos_yaw();
 
     // update angle targets that will be passed to stabilize controller
     _pitch_target = constrain_float(fast_atan(-accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI),-lean_angle_max, lean_angle_max);

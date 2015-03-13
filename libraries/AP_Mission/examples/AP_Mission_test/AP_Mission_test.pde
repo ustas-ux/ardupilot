@@ -24,7 +24,6 @@
 #include <StorageManager.h>
 #include <AP_Terrain.h>
 #include <AP_GPS.h>             // ArduPilot GPS library
-#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>            // ArduPilot Mega Barometer Library
@@ -45,9 +44,8 @@ AP_Baro baro;
 
 // GPS declaration
 static AP_GPS  gps;
-GPS_Glitch gps_glitch(gps);
 
-AP_Compass_HMC5843 compass;
+AP_Compass compass;
 AP_AHRS_DCM ahrs(ins, baro, gps);
 
 // global constants that control how many verify calls must be made for a command before it completes

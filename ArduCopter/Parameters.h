@@ -127,6 +127,7 @@ public:
         k_param_optflow,
         k_param_dcmcheck_thresh,        // 59
         k_param_log_bitmask,
+        k_param_cli_enabled,
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -134,8 +135,8 @@ public:
         k_param_geofence_limit,         // deprecated - remove
         k_param_altitude_limit,         // deprecated - remove
         k_param_fence,
-        k_param_gps_glitch,
-        k_param_baro_glitch,            // 71
+        k_param_gps_glitch,             // deprecated
+        k_param_baro_glitch,            // 71 - deprecated
 
         //
         // 75: Singlecopter, CoaxCopter
@@ -166,7 +167,7 @@ public:
         //
         // 100: Inertial Nav
         //
-        k_param_inertial_nav = 100,
+        k_param_inertial_nav = 100, // deprecated
         k_param_wp_nav,
         k_param_attitude_control,
         k_param_pos_control,
@@ -257,7 +258,7 @@ public:
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled,
         k_param_throttle_mid,
-        k_param_failsafe_gps_enabled,
+        k_param_failsafe_gps_enabled,   // remove
         k_param_rc_9,
         k_param_rc_12,
         k_param_failsafe_gcs,           // 198
@@ -330,6 +331,9 @@ public:
     AP_Int16        sysid_this_mav;
     AP_Int16        sysid_my_gcs;
     AP_Int8         telem_delay;
+#if CLI_ENABLED == ENABLED
+    AP_Int8         cli_enabled;
+#endif
 
     AP_Int16        rtl_altitude;
     AP_Float        sonar_gain;
@@ -338,7 +342,6 @@ public:
     AP_Float        fs_batt_voltage;            // battery voltage below which failsafe will be triggered
     AP_Float        fs_batt_mah;                // battery capacity (in mah) below which failsafe will be triggered
 
-    AP_Int8         failsafe_gps_enabled;       // gps failsafe enabled
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 

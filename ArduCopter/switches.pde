@@ -46,13 +46,13 @@ static void read_control_switch()
                 }
             }
 
-            // set the debounced switch position
-            control_switch_state.debounced_switch_position = switch_position;
-
         } else if (control_switch_state.last_switch_position != -1) {
             // alert user to mode change failure
             AP_Notify::events.user_mode_change_failed = 1;
         }
+
+        // set the debounced switch position
+        control_switch_state.debounced_switch_position = switch_position;
     }
 
     control_switch_state.last_switch_position = switch_position;
@@ -119,7 +119,6 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
-        case AUX_SWITCH_EKF:
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:	    // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
         case AUX_SWITCH_RETRACT_MOUNT:
@@ -142,7 +141,6 @@ static void init_aux_switches()
         case AUX_SWITCH_ACRO_TRAINER:
         case AUX_SWITCH_EPM:
         case AUX_SWITCH_SPRAYER:
-        case AUX_SWITCH_EKF:
         case AUX_SWITCH_PARACHUTE_ENABLE:
         case AUX_SWITCH_PARACHUTE_3POS:     // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
         case AUX_SWITCH_RETRACT_MOUNT:
@@ -380,12 +378,6 @@ static void do_aux_switch_function(int8_t ch_function, uint8_t ch_flag)
                 }
             }
             break;
-
-#if AP_AHRS_NAVEKF_AVAILABLE
-    case AUX_SWITCH_EKF:
-        ahrs.set_ekf_use(ch_flag==AUX_SWITCH_HIGH);
-        break;
-#endif
 
 #if PARACHUTE == ENABLED
     case AUX_SWITCH_PARACHUTE_ENABLE:

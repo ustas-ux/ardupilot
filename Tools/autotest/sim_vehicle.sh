@@ -150,7 +150,9 @@ kill_tasks()
     }
 }
 
+if [ $START_HIL == 0 ]; then
 kill_tasks
+fi
 
 trap kill_tasks SIGINT
 
@@ -183,6 +185,10 @@ case $FRAME in
     octa)
 	BUILD_TARGET="sitl-octa"
         EXTRA_SIM="--frame=octa"
+	;;
+    octa-quad)
+	BUILD_TARGET="sitl-octa-quad"
+        EXTRA_SIM="--frame=octa-quad"
 	;;
     heli)
 	BUILD_TARGET="sitl-heli"
@@ -360,4 +366,6 @@ if [ $USE_MAVLINK_GIMBAL == 1 ]; then
     options="$options --load-module=gimbal"
 fi
 mavproxy.py $options --cmd="$extra_cmd" $*
+if [ $START_HIL == 0 ]; then
 kill_tasks
+fi

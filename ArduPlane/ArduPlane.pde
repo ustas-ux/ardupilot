@@ -194,19 +194,7 @@ static AP_Int8          *flight_modes = &g.flight_mode1;
 
 static AP_Baro barometer;
 
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
-static AP_Compass_AK8963_MPU9250 compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
+Compass compass;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_APM1
 AP_ADC_ADS7844 apm1_adc;
@@ -585,6 +573,9 @@ static bool throttle_suppressed;
 
 AP_SpdHgtControl::FlightStage flight_stage = AP_SpdHgtControl::FLIGHT_NORMAL;
 
+// probability of aircraft is currently in flight. range from 0 to 1 where 1 is 100% sure we're in flight
+static float isFlyingProbability = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Loiter management
 ////////////////////////////////////////////////////////////////////////////////
@@ -867,10 +858,10 @@ static void ahrs_update()
     hal.util->set_soft_armed(arming.is_armed() &&
                    hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // update hil before AHRS update
-    gcs_update();
-#endif
+    if (g.hil_mode == 1) {
+        // update hil before AHRS update
+        gcs_update();
+    }
 
     ahrs.update();
 
@@ -1023,6 +1014,9 @@ static void one_second_loop()
     mavlink_system.sysid = g.sysid_this_mav;
 
     update_aux();
+
+    // determine if we are flying or not
+    determine_is_flying();
 
     // update notify flags
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
@@ -1545,6 +1539,49 @@ static void update_flight_stage(void)
     // tell AHRS the airspeed to true airspeed ratio
     airspeed.set_EAS2TAS(barometer.get_EAS2TAS());
 }
+
+
+
+/*
+  Do we think we are flying?
+  Probabilistic method where a bool is low-passed and considered a probability.
+*/
+static void determine_is_flying(void)
+{
+    float aspeed;
+    bool isFlyingBool;
+
+    bool airspeedMovement = ahrs.airspeed_estimate(&aspeed) && (aspeed >= 5);
+
+    // If we don't have a GPS lock then don't use GPS for this test
+    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
+                        gps.ground_speed() >= 5);
+
+
+    if (hal.util->get_soft_armed()) {
+        // when armed, we need overwhelming evidence that we ARE NOT flying
+        isFlyingBool = airspeedMovement || gpsMovement;
+
+    } else {
+        // when disarmed, we need overwhelming evidence that we ARE flying
+        isFlyingBool = airspeedMovement && gpsMovement;
+    }
+
+    // low-pass the result.
+    isFlyingProbability = (0.6f * isFlyingProbability) + (0.4f * (float)isFlyingBool);
+}
+
+static bool is_flying(void)
+{
+    if (hal.util->get_soft_armed()) {
+        // when armed, assume we're flying unless we probably aren't
+        return (isFlyingProbability >= 0.1f);
+    }
+
+    // when disarmed, assume we're not flying unless we probably are
+    return (isFlyingProbability >= 0.9f);
+}
+
 
 #if OPTFLOW == ENABLED
 // called at 50hz

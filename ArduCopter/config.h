@@ -40,23 +40,9 @@
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-#ifdef CONFIG_APM_HARDWARE
-#error CONFIG_APM_HARDWARE option is deprecated! use CONFIG_HAL_BOARD instead
-#endif
-
 #ifndef CONFIG_HAL_BOARD
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
 #endif
-
-#ifdef __AVR_ATmega1280__
-#error ATmega1280 is not supported
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// sensor types
-
-#define CONFIG_BARO     HAL_BARO_DEFAULT
-#define CONFIG_COMPASS  HAL_COMPASS_DEFAULT
 
 //////////////////////////////////////////////////////////////////////////////
 // HIL_MODE                                 OPTIONAL
@@ -74,19 +60,14 @@
 
 #define MAGNETOMETER ENABLED
 
-// disable some features for APM1/APM2
+// low power cpus are not supported
 #if HAL_CPU_CLASS < HAL_CPU_CLASS_75
- # define PARACHUTE DISABLED
- # define AC_RALLY DISABLED
- # define EPM_ENABLED DISABLED
- # define CLI_ENABLED           DISABLED
- # define FRSKY_TELEM_ENABLED   DISABLED
- # define NAV_GUIDED            DISABLED
+ # error ArduCopter ver3.3 and higher is not supported on APM1, APM2 boards
 #endif
 
 
-#if HAL_CPU_CLASS < HAL_CPU_CLASS_75 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- // low power CPUs (APM1, APM2 and SITL)
+#if CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+ // slow loop rate in SITL, Linux
  # define MAIN_LOOP_RATE    100
  # define MAIN_LOOP_SECONDS 0.01
  # define MAIN_LOOP_MICROS  10000
@@ -152,35 +133,10 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// ADC Enable - used to eliminate for systems which don't have ADC.
-//
-#ifndef CONFIG_ADC
- # if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-  #   define CONFIG_ADC ENABLED
- # else
-  #   define CONFIG_ADC DISABLED
- # endif
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // PWM control
 // default RC speed in Hz
 #ifndef RC_FAST_SPEED
    #   define RC_FAST_SPEED 490
-#endif
-
-////////////////////////////////////////////////////////
-// LED and IO Pins
-//
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM2
-#elif CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
-#elif CONFIG_HAL_BOARD == HAL_BOARD_PX4
-#elif CONFIG_HAL_BOARD == HAL_BOARD_FLYMAPLE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
- # define LED_ON           LOW
- # define LED_OFF          HIGH
-#elif CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -274,10 +230,7 @@
  # define BOARD_VOLTAGE_MAX             5.8f        // max board voltage in volts for pre-arm checks
 #endif
 
-// GPS failsafe
-#ifndef FAILSAFE_GPS_TIMEOUT_MS
- # define FAILSAFE_GPS_TIMEOUT_MS       5000    // gps failsafe triggers after 5 seconds with no GPS
-#endif
+// prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
  # define GPS_HDOP_GOOD_DEFAULT         230     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
 #endif
@@ -345,14 +298,8 @@
 #endif
 
 // expected magnetic field strength.  pre-arm checks will fail if 50% higher or lower than this value
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2
- #ifndef COMPASS_MAGFIELD_EXPECTED
-  # define COMPASS_MAGFIELD_EXPECTED     330        // pre arm will fail if mag field > 544 or < 115
- #endif
-#else // PX4, SITL
- #ifndef COMPASS_MAGFIELD_EXPECTED
-  #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
- #endif
+#ifndef COMPASS_MAGFIELD_EXPECTED
+ #define COMPASS_MAGFIELD_EXPECTED      530        // pre arm will fail if mag field > 874 or < 185
 #endif
 
 // max compass offset length (i.e. sqrt(offs_x^2+offs_y^2+offs_Z^2))
@@ -360,7 +307,7 @@
  #ifndef COMPASS_OFFSETS_MAX
   # define COMPASS_OFFSETS_MAX          600         // PX4 onboard compass has high offsets
  #endif
-#else   // APM1, APM2, SITL, FLYMAPLE, etc
+#else   // SITL, FLYMAPLE, etc
  #ifndef COMPASS_OFFSETS_MAX
   # define COMPASS_OFFSETS_MAX          500
  #endif
@@ -737,19 +684,8 @@
  # define LOGGING_ENABLED                ENABLED
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1 || CONFIG_HAL_BOARD == HAL_BOARD_APM2 || CONFIG_HAL_BOARD == HAL_BOARD_AVR_SITL
- // APM1 & APM2 default logging
- # define DEFAULT_LOG_BITMASK \
-    MASK_LOG_ATTITUDE_MED | \
-    MASK_LOG_GPS | \
-    MASK_LOG_PM | \
-    MASK_LOG_CTUN | \
-    MASK_LOG_NTUN | \
-    MASK_LOG_RCIN | \
-    MASK_LOG_CMD | \
-    MASK_LOG_CURRENT
-#else
- // PX4, Pixhawk, FlyMaple default logging
+// Default logging bitmask
+#ifndef DEFAULT_LOG_BITMASK
  # define DEFAULT_LOG_BITMASK \
     MASK_LOG_ATTITUDE_MED | \
     MASK_LOG_GPS | \

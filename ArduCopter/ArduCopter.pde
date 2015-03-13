@@ -103,12 +103,10 @@
 #include <GCS_MAVLink.h>        // MAVLink GCS definitions
 #include <AP_SerialManager.h>   // Serial manager library
 #include <AP_GPS.h>             // ArduPilot GPS library
-#include <AP_GPS_Glitch.h>      // GPS glitch protection library
 #include <DataFlash.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_ADC.h>             // ArduPilot Mega Analog to Digital Converter Library
 #include <AP_ADC_AnalogSource.h>
 #include <AP_Baro.h>
-#include <AP_Baro_Glitch.h>     // Baro glitch protection library
 #include <AP_Compass.h>         // ArduPilot Mega Magnetometer Library
 #include <AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Curve.h>           // Curve used to linearlise throttle pwm to thrust
@@ -223,11 +221,7 @@ static void gcs_send_text_fmt(const prog_char_t *fmt, ...);
 ////////////////////////////////////////////////////////////////////////////////
 // Dataflash
 ////////////////////////////////////////////////////////////////////////////////
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM2
-static DataFlash_APM2 DataFlash;
-#elif CONFIG_HAL_BOARD == HAL_BOARD_APM1
-static DataFlash_APM1 DataFlash;
-#elif defined(HAL_BOARD_LOG_DIRECTORY)
+#if defined(HAL_BOARD_LOG_DIRECTORY)
 static DataFlash_File DataFlash(HAL_BOARD_LOG_DIRECTORY);
 #else
 static DataFlash_Empty DataFlash;
@@ -258,32 +252,12 @@ static const AP_InertialSensor::Sample_rate ins_sample_rate = AP_InertialSensor:
 
 static AP_GPS  gps;
 
-static GPS_Glitch gps_glitch(gps);
-
 // flight modes convenience array
 static AP_Int8 *flight_modes = &g.flight_mode1;
 
 static AP_Baro barometer;
 
-static Baro_Glitch baro_glitch(barometer);
-
-#if CONFIG_COMPASS == HAL_COMPASS_PX4
-static AP_Compass_PX4 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_VRBRAIN
-static AP_Compass_VRBRAIN compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HMC5843
-static AP_Compass_HMC5843 compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_HIL
-static AP_Compass_HIL compass;
-#elif CONFIG_COMPASS == HAL_COMPASS_AK8963
-static AP_Compass_AK8963_MPU9250 compass;
-#else
- #error Unrecognized CONFIG_COMPASS setting
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_APM1
-AP_ADC_ADS7844 apm1_adc;
-#endif
+static Compass compass;
 
 AP_InertialSensor ins;
 
@@ -411,7 +385,6 @@ static struct {
     uint8_t rc_override_active  : 1; // 0   // true if rc control are overwritten by ground station
     uint8_t radio               : 1; // 1   // A status flag for the radio failsafe
     uint8_t battery             : 1; // 2   // A status flag for the battery failsafe
-    uint8_t gps                 : 1; // 3   // A status flag for the gps failsafe
     uint8_t gcs                 : 1; // 4   // A status flag for the ground station failsafe
     uint8_t ekf                 : 1; // 5   // true if ekf failsafe has occurred
 
@@ -605,11 +578,7 @@ static float G_Dt = 0.02;
 ////////////////////////////////////////////////////////////////////////////////
 // Inertial Navigation
 ////////////////////////////////////////////////////////////////////////////////
-#if AP_AHRS_NAVEKF_AVAILABLE
-static AP_InertialNav_NavEKF inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
-#else
-static AP_InertialNav inertial_nav(ahrs, barometer, gps_glitch, baro_glitch);
-#endif
+static AP_InertialNav_NavEKF inertial_nav(ahrs);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Attitude, Position and Waypoint navigation objects
@@ -645,7 +614,7 @@ static uint32_t rtl_loiter_start_time;
 // Used to exit the roll and pitch auto trim function
 static uint8_t auto_trim_counter;
 
-// Reference to the relay object (APM1 -> PORTL 2) (APM2 -> PORTB 7)
+// Reference to the relay object
 static AP_Relay relay;
 
 // handle repeated servo and relay events
@@ -1012,6 +981,9 @@ static void throttle_loop()
     // check if we've landed
     update_land_detector();
 
+    // update throttle_low_comp value (controls priority of throttle vs attitude control)
+    update_throttle_low_comp();
+
     // check auto_armed status
     update_auto_armed();
 
@@ -1179,12 +1151,11 @@ static void one_hz_loop()
 static void update_GPS(void)
 {
     static uint32_t last_gps_reading[GPS_MAX_INSTANCES];   // time of last gps message
-    bool report_gps_glitch;
     bool gps_updated = false;
 
     gps.update();
 
-    // logging and glitch protection run after every gps message
+    // log after every gps message
     for (uint8_t i=0; i<gps.num_sensors(); i++) {
         if (gps.last_message_time_ms(i) != last_gps_reading[i]) {
             last_gps_reading[i] = gps.last_message_time_ms(i);
@@ -1199,20 +1170,6 @@ static void update_GPS(void)
     }
 
     if (gps_updated) {
-        // run glitch protection and update AP_Notify if home has been initialised
-        if (home_is_set()) {
-            gps_glitch.check_position();
-            report_gps_glitch = (gps_glitch.glitching() && !ap.usb_connected && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
-            if (AP_Notify::flags.gps_glitching != report_gps_glitch) {
-                if (gps_glitch.glitching()) {
-                    Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_GPS_GLITCH);
-                }else{
-                    Log_Write_Error(ERROR_SUBSYSTEM_GPS, ERROR_CODE_ERROR_RESOLVED);
-                }
-                AP_Notify::flags.gps_glitching = report_gps_glitch;
-            }
-        }
-
         // set system time if necessary
         set_system_time_from_GPS();
 
@@ -1232,9 +1189,6 @@ static void update_GPS(void)
 #endif
         }
     }
-
-    // check for loss of gps
-    failsafe_gps_check();
 }
 
 static void

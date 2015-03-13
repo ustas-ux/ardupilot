@@ -119,7 +119,7 @@ build_arduplane() {
     tag="$1"
     echo "Building ArduPlane $tag binaries from $(pwd)"
     pushd ArduPlane
-    for b in apm1 apm2 apm1-hilsensors apm2-hilsensors; do
+    for b in apm1 apm2; do
         checkout ArduPlane $tag $b || {
             echo "Failed checkout of ArduPlane $b $tag"
             error_count=$((error_count+1))
@@ -176,26 +176,6 @@ build_arducopter() {
     echo "Building ArduCopter $tag binaries from $(pwd)"
     pushd ArduCopter
     frames="quad tri hexa y6 octa octa-quad heli"
-    for b in apm1 apm2; do
-        checkout ArduCopter $tag $b || {
-            echo "Failed checkout of ArduCopter $b $tag"
-            error_count=$((error_count+1))
-            continue
-        }
-	for f in $frames quad-hil heli-hil; do
-	    echo "Building ArduCopter $b-$f binaries"
-	    ddir="$binaries/Copter/$hdate/$b-$f"
-	    skip_build $tag $ddir && continue
-	    make clean || continue
-	    make "$b-$f" -j4 || {
-                echo "Failed build of ArduCopter $b $tag"
-                error_count=$((error_count+1))
-                continue
-            }
-	    copyit $TMPDIR/ArduCopter.build/ArduCopter.hex "$ddir" "$tag"
-	    touch $binaries/Copter/$tag
-	done
-    done
     test -n "$PX4_ROOT" && {
         checkout ArduCopter $tag PX4 || {
             echo "Failed checkout of ArduCopter PX4 $tag"
@@ -205,7 +185,7 @@ build_arducopter() {
             return
         }
 	make px4-clean || return
-	for f in $frames quad-hil heli-hil; do
+	for f in $frames; do
 	    echo "Building ArduCopter PX4-$f binaries"
 	    ddir="$binaries/Copter/$hdate/PX4-$f"
 	    skip_build $tag $ddir && continue

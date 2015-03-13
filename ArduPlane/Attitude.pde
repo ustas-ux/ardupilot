@@ -545,29 +545,7 @@ static void flap_slew_limit(int8_t &last_value, int8_t &new_value)
     last_value = new_value;
 }
 
-
-
-/**
-  Do we think we are flying?
-  This is a heuristic so it could be wrong in some cases.  In particular, if we don't have GPS lock we'll fall
-  back to only using altitude.  (This is probably more optimistic than what suppress_throttle wants...)
-*/
-static bool is_flying(void)
-{
-    // If we don't have a GPS lock then don't use GPS for this test
-    bool gpsMovement = (gps.status() < AP_GPS::GPS_OK_FIX_2D ||
-                        gps.ground_speed() >= 5);
-    
-    bool airspeedMovement = (!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5;
-    
-    // we're more than 5m from the home altitude
-    bool inAir = relative_altitude_abs_cm() > 500;
-
-    return inAir && gpsMovement && airspeedMovement;
-}
-
-
-/* We want to supress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
+/* We want to suppress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
 
    Disable throttle if following conditions are met:
    *       1 - We are in Circle mode (which we use for short term failsafe), or in FBW-B or higher
@@ -973,16 +951,16 @@ static void set_servos(void)
     obc.check_crash_plane();
 #endif
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    // get the servos to the GCS immediately for HIL
-    if (comm_get_txspace(MAVLINK_COMM_0) >= 
-        MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
-        send_servo_out(MAVLINK_COMM_0);
+    if (g.hil_mode == 1) {
+        // get the servos to the GCS immediately for HIL
+        if (comm_get_txspace(MAVLINK_COMM_0) >= 
+            MAVLINK_MSG_ID_RC_CHANNELS_SCALED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES) {
+            send_servo_out(MAVLINK_COMM_0);
+        }
+        if (!g.hil_servos) {
+            return;
+        }
     }
-    if (!g.hil_servos) {
-        return;
-    }
-#endif
 
     // send values to the PWM timers for output
     // ----------------------------------------
