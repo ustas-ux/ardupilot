@@ -169,10 +169,15 @@ public:
 
     /// Query GPS status
     GPS_Status status(uint8_t instance) const {
-        return _GPS_STATE(instance).status;
+        if (_gps_use > 0)
+            return _GPS_STATE(instance).status;
+        else return GPS_Status::NO_FIX;
     }
+
     GPS_Status status(void) const {
-        return status(primary_instance);
+        if (_gps_use > 0)
+            return status(primary_instance);
+        else return GPS_Status::NO_FIX;
     }
 
     // Query the highest status this GPS supports
@@ -338,6 +343,8 @@ public:
 #endif
     AP_Int8 _sbas_mode;
     AP_Int8 _min_elevation;
+
+    AP_Int8 _gps_use;
     
     // handle sending of initialisation strings to the GPS
     void send_blob_start(uint8_t instance, const prog_char *_blob, uint16_t size);
