@@ -1,5 +1,7 @@
 /usr/include
 /usr/include/c++/4.8/tr1
+../PX4Firmware/src
+../PX4Firmware/src/modules
 AntennaTracker
 APMrover2
 ArduCopter
