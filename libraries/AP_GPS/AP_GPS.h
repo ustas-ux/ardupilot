@@ -171,13 +171,13 @@ public:
     GPS_Status status(uint8_t instance) const {
         if (_gps_use > 0)
             return _GPS_STATE(instance).status;
-        else return GPS_Status::NO_FIX;
+        else return NO_FIX;
     }
 
     GPS_Status status(void) const {
         if (_gps_use > 0)
             return status(primary_instance);
-        else return GPS_Status::NO_FIX;
+        else return NO_FIX;
     }
 
     // Query the highest status this GPS supports

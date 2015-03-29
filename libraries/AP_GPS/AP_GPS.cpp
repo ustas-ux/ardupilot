@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] PROGMEM = {
     // @Description: disable - 0/enable - 1 GPS
     // @Units: 0/1
     // @User: Super Advanced
-    AP_GROUPINFO("GPS_USE", 7, AP_GPS, _gps_use, 1),
+    AP_GROUPINFO("USE", 7, AP_GPS, _gps_use, 1),
 
 
     AP_GROUPEND
