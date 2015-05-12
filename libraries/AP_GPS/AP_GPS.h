@@ -244,6 +244,10 @@ public:
         return ground_speed(primary_instance);
     }
 
+    uint8_t use_gps(void) {
+        return _gps_use;
+    }
+
     // ground speed in cm/s
     uint32_t ground_speed_cm(void) {
         return ground_speed() * 100;

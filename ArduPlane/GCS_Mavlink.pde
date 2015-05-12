@@ -325,10 +325,44 @@ static void NOINLINE send_location(mavlink_channel_t chan)
     // use the current boot time as the fix time.    
     if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
         fix_time_ms = gps.last_fix_time_ms();
+
+        const Vector3f &vel = gps.velocity();
+        mavlink_msg_global_position_int_send(
+            chan,
+            fix_time_ms,
+            current_loc.lat,                // in 1E7 degrees
+            current_loc.lng,                // in 1E7 degrees
+            gps.location().alt * 10UL,      // millimeters above sea level
+            relative_altitude() * 1.0e3f,    // millimeters above ground
+            vel.x * 100,  // X speed cm/s (+ve North)
+            vel.y * 100,  // Y speed cm/s (+ve East)
+            vel.z * -100, // Z speed cm/s (+ve up)
+            ahrs.yaw_sensor);
+
     } else {
         fix_time_ms = hal.scheduler->millis();
+
+        // we make GPS disable simulation with parameter GPS_USE, but want to see it coordinates
+        if (!gps.use_gps())
+        {
+            const Location &loc = gps.location();
+            const Vector3f &vel = gps.velocity();
+
+            mavlink_msg_global_position_int_send(
+                chan,
+                fix_time_ms,
+                loc.lat,                // in 1E7 degrees
+                loc.lng,                // in 1E7 degrees
+                gps.location().alt * 10UL,      // millimeters above sea level
+                relative_altitude() * 1.0e3f,    // millimeters above ground
+                vel.x * 100,  // X speed cm/s (+ve North)
+                vel.y * 100,  // Y speed cm/s (+ve East)
+                vel.z * -100, // Z speed cm/s (+ve up)
+                ahrs.yaw_sensor);
+        }
     }
-    const Vector3f &vel = gps.velocity();
+
+   /* const Vector3f &vel = gps.velocity();
     mavlink_msg_global_position_int_send(
         chan,
         fix_time_ms,
@@ -339,7 +373,7 @@ static void NOINLINE send_location(mavlink_channel_t chan)
         vel.x * 100,  // X speed cm/s (+ve North)
         vel.y * 100,  // Y speed cm/s (+ve East)
         vel.z * -100, // Z speed cm/s (+ve up)
-        ahrs.yaw_sensor);
+        ahrs.yaw_sensor);*/
 }
 
 static void NOINLINE send_nav_controller_output(mavlink_channel_t chan)
