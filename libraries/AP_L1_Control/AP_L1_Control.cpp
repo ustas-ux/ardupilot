@@ -3,6 +3,11 @@
 #include <AP_HAL.h>
 #include "AP_L1_Control.h"
 
+#ifdef __QT_CREATOR__
+#include "AP_Param.h"
+#include "AP_Progmem_Identity.h"
+#endif //__QT_CREATOR__
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters

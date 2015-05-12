@@ -1,5 +1,9 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#ifdef __QT_CREATOR__
+#include "AP_Progmem_Identity.h"
+#endif //__QT_CREATOR__
+
 #if CLI_ENABLED == ENABLED
 
 // Functions called from the setup menu

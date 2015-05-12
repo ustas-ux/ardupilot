@@ -1,5 +1,18 @@
 /// -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#ifdef __QT_CREATOR__
+#include "APM_Config.h"
+#include "compat.h"
+#include "config.h"
+#include "defines.h"
+#include "Parameters.h"
+#include "common.h"
+#include "ArduPlane.pde"
+#include "mavlink_msg_heartbeat.h"
+#include "AP_Progmem_Identity.h"
+#include "commands.pde"
+#endif //__QT_CREATOR__
+
 // forward declarations to make compiler happy
 static void do_takeoff(const AP_Mission::Mission_Command& cmd);
 static void do_nav_wp(const AP_Mission::Mission_Command& cmd);

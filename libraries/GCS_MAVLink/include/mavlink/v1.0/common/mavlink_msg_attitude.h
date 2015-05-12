@@ -2,6 +2,11 @@
 
 #define MAVLINK_MSG_ID_ATTITUDE 30
 
+#ifdef __QT_CREATOR__
+#include "mavlink_helpers.h"
+#include "protocol.h"
+#endif
+
 typedef struct __mavlink_attitude_t
 {
  uint32_t time_boot_ms; ///< Timestamp (milliseconds since system boot)

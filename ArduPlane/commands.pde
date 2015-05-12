@@ -3,6 +3,19 @@
  *  logic for dealing with the current command in the mission and home location
  */
 
+#ifdef __QT_CREATOR__
+#include "APM_Config.h"
+#include "compat.h"
+#include "config.h"
+#include "defines.h"
+#include "Parameters.h"
+#include "common.h"
+#include "ArduPlane.pde"
+#include "mavlink_msg_heartbeat.h"
+#include "AP_Progmem_Identity.h"
+#include "GCS_Mavlink.pde"
+#endif //__QT_CREATOR__
+
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */

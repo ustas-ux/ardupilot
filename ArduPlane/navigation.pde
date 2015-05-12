@@ -1,5 +1,16 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+#ifdef __QT_CREATOR__
+#include "APM_Config.h"
+#include "compat.h"
+#include "config.h"
+#include "defines.h"
+#include "Parameters.h"
+#include "common.h"
+#include "ArduPlane.pde"
+#include "mavlink_msg_heartbeat.h"
+#include "AP_Progmem_Identity.h"
+#endif //__QT_CREATOR__
 
 // set the nav_controller pointer to the right controller
 static void set_nav_controller(void)

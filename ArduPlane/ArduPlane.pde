@@ -734,6 +734,12 @@ static uint32_t delta_us_fast_loop;
 // Counter of main loop executions.  Used for performance monitoring and failsafe processing
 static uint16_t mainLoop_count;
 
+// Flag for Multi Remote Switch calibration state
+static bool mrs_is_set;
+static uint8_t mrs_current_mode;
+static uint8_t mrs_current_switch;
+static uint16_t mrs_current_cycle;
+
 // Camera/Antenna mount tracking and stabilisation stuff
 // --------------------------------------
 #if MOUNT == ENABLED
@@ -793,6 +799,7 @@ static const AP_Scheduler::Task scheduler_tasks[] PROGMEM = {
     { update_optical_flow,    1,    500 },
 #endif
     { one_second_loop,       50,   1000 },
+	{ mrs_loop,        8,   1000 },
     { check_long_failsafe,   15,   1000 },
     { read_receiver_rssi,     5,   1000 },
     { airspeed_ratio_update, 50,   1000 }, // 30
@@ -823,6 +830,12 @@ void setup() {
     rssi_analog_source = hal.analogin->channel(ANALOG_INPUT_NONE);
 
     init_ardupilot();
+
+
+	mrs_current_mode   = 9;
+	mrs_current_switch = 0;
+	mrs_current_cycle  = 0;
+	mrs_is_set         = false;
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], sizeof(scheduler_tasks)/sizeof(scheduler_tasks[0]));
@@ -1048,6 +1061,29 @@ static void one_second_loop()
         terrain.log_terrain_data(DataFlash);
     }
 #endif
+
+	//RC_Channel_aux::set_radio(RC_Channel_aux::k_multi_remote_switch, (mrs_is_set) ? 815 : 1500);
+	//mrs_is_set = !mrs_is_set;
+
+}
+
+static void mrs_loop()
+{
+	/*switch (mrs_current_cycle) {
+	case 0:
+	case 2:
+		RC_Channel_aux::set_radio(RC_Channel_aux::k_multi_remote_switch, 1900);
+		break;
+	case 1:
+		RC_Channel_aux::set_radio(RC_Channel_aux::k_multi_remote_switch, 803);
+		break;
+	default:
+		break;
+	}
+	//RC_Channel_aux::set_radio(RC_Channel_aux::k_multi_remote_switch, 1900);
+	if (mrs_current_cycle++ > 20) mrs_current_cycle = 0;
+	RC_Channel_aux::set_radio(RC_Channel_aux::k_multi_remote_switch_init, (mrs_is_set)? 1900 : 803);
+	mrs_is_set = !mrs_is_set;*/
 }
 
 static void log_perf_info()

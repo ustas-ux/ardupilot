@@ -3,6 +3,18 @@
 //Function that will read the radio data, limit servos and trigger a failsafe
 // ----------------------------------------------------------------------------
 
+#ifdef __QT_CREATOR__
+#include "APM_Config.h"
+#include "compat.h"
+#include "config.h"
+#include "defines.h"
+#include "Parameters.h"
+#include "common.h"
+#include "ArduPlane.pde"
+#include "mavlink_msg_heartbeat.h"
+#include "AP_Progmem_Identity.h"
+#endif //__QT_CREATOR__
+
 /*
   allow for runtime change of control channel ordering
  */

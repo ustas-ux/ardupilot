@@ -2,6 +2,12 @@
 
 #define MAVLINK_MSG_ID_HEARTBEAT 0
 
+#ifdef __QT_CREATOR__
+#include "mavlink_helpers.h"
+#include "protocol.h"
+#endif
+
+
 typedef struct __mavlink_heartbeat_t
 {
  uint32_t custom_mode; ///< A bitfield for use for autopilot-specific flags.
