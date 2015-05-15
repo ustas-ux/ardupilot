@@ -64,6 +64,7 @@ public:
         k_param_flap_1_percent,
         k_param_flap_1_speed,
         k_param_flap_2_percent,
+
         k_param_flap_2_speed,
         k_param_reset_switch_chan,
         k_param_manual_level, // unused
@@ -74,6 +75,7 @@ public:
         k_param_land_flare_alt,
         k_param_land_flare_sec,
         k_param_crosstrack_min_distance, // unused
+
         k_param_rudder_steer, // unused
         k_param_throttle_nudge,
         k_param_alt_offset,
@@ -84,6 +86,7 @@ public:
         k_param_level_roll_limit,
         k_param_hil_servos,
         k_param_vtail_output,
+
         k_param_nav_controller,
         k_param_elevon_output,
         k_param_att_controller,
@@ -94,6 +97,7 @@ public:
         k_param_skip_gyro_cal,
         k_param_auto_fbw_steer,
         k_param_waypoint_max_radius,
+
         k_param_ground_steer_alt,        
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
@@ -104,6 +108,7 @@ public:
         k_param_rssi_range,
         k_param_flapin_channel,
         k_param_flaperon_output,
+
         k_param_gps,
         k_param_autotune_level,
         k_param_rally,
@@ -114,6 +119,7 @@ public:
         k_param_takeoff_tdrag_speed1,
         k_param_takeoff_rotate_speed,
         k_param_takeoff_throttle_slewrate,
+
         k_param_takeoff_throttle_max,
         k_param_rangefinder,
         k_param_terrain,
@@ -124,6 +130,7 @@ public:
         k_param_terrain_lookahead,
         k_param_fbwa_tdrag_chan,
         k_param_rangefinder_landing,
+
         k_param_land_flap_percent,
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
@@ -311,6 +318,8 @@ public:
         k_param_pidWheelSteer, // unused
 
         // 254,255: reserved
+
+        k_param_takeoff_throttle_min,
     };
 
     AP_Int16 format_version;
@@ -463,6 +472,7 @@ public:
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
     AP_Int8 takeoff_throttle_max;
+    AP_Int8 takeoff_throttle_min;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;
