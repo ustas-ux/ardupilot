@@ -842,14 +842,15 @@ static void set_servos(void)
             if (g.throttle_suppress_manual) {
                 // manual pass through of throttle while throttle is suppressed
                 channel_throttle->radio_out = channel_throttle->radio_in;
-            } else if ((control_mode == AUTO) &&
+			} else if ((control_mode == AUTO) &&
                        (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) &&
-                       (g.takeoff_throttle_prestart > 0))
-            {
-                gcs_send_text_P(SEVERITY_HIGH,PSTR("Go takeoff_throttle_prestart"));
-                channel_throttle->servo_out = g.takeoff_throttle_prestart;
-                channel_throttle->calc_pwm();
-            }
+					   (g.takeoff_throttle_prestart > 0)) {
+				gcs_send_text_fmt(PSTR("Go takeoff_throttle_prestart"));
+				gcs_send_text_P(SEVERITY_HIGH,PSTR("Go takeoff_throttle_prestart"));
+				channel_throttle->servo_out = constrain_int16(g.takeoff_throttle_prestart,
+																			  min_throttle,
+																			  max_throttle);
+			}
             else {
                 channel_throttle->calc_pwm();                
             }

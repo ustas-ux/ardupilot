@@ -30,10 +30,10 @@ static bool auto_takeoff_check(void)
     last_check_ms = now;
 
     // Check for bad GPS
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+	/*if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         // no auto takeoff without GPS lock
         return false;
-    }
+	}*/
 
     // Check for launch acceleration or timer started. NOTE: relies on TECS 50Hz processing
     if (!launchTimerStarted &&
