@@ -319,7 +319,7 @@ public:
 
         // 254,255: reserved
 
-        k_param_takeoff_throttle_min,
+        k_param_takeoff_throttle_prestart,
     };
 
     AP_Int16 format_version;
@@ -472,7 +472,7 @@ public:
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
     AP_Int8 takeoff_throttle_max;
-    AP_Int8 takeoff_throttle_min;
+    AP_Int8 takeoff_throttle_prestart;
     AP_Int8 level_roll_limit;
     AP_Int8 flapin_channel;
     AP_Int8 flaperon_output;

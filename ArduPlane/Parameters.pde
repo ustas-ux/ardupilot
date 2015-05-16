@@ -214,13 +214,13 @@ const AP_Param::Info var_info[] PROGMEM = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
-    // @Param: TKOFF_THR_MIN
-    // @DisplayName: Takeoff flap percentage
-    // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
+    // @Param: TKOFF_THR_PRESTART
+    // @DisplayName:
+    // @Description:
     // @Range: 0 100
     // @Units: Percent
     // @User: Advanced
-    GSCALAR(takeoff_throttle_min,     "TKOFF_THR_MIN", 0),
+    GSCALAR(takeoff_throttle_prestart,     "TKOFF_THR_START", 0),
 
     // @Param: FBWA_TDRAG_CHAN
     // @DisplayName: FBWA taildragger channel
