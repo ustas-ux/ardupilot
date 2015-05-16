@@ -848,6 +848,7 @@ static void set_servos(void)
             {
                 gcs_send_text_P(SEVERITY_HIGH,PSTR("Go takeoff_throttle_prestart"));
                 channel_throttle->servo_out = g.takeoff_throttle_prestart;
+                channel_throttle->calc_pwm();
             }
             else {
                 channel_throttle->calc_pwm();                
