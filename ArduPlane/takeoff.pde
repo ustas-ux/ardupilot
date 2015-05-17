@@ -1,5 +1,7 @@
 // -*- tab-width: 4; Mode: C++; c-basic-offset: 4; indent-tabs-mode: nil -*-
 
+
+
 /*   Check for automatic takeoff conditions being met using the following sequence:
  *   1) Check for adequate GPS lock - if not return false
  *   2) Check the gravity compensated longitudinal acceleration against the threshold and start the timer if true
@@ -21,6 +23,7 @@ static bool auto_takeoff_check(void)
     // Reset states if process has been interrupted
     if (last_check_ms && (now - last_check_ms) > 200) {
         gcs_send_text_fmt(PSTR("Timer Interrupted AUTO"));
+            takeoff_state.takeoff_waiting = false;
 	    launchTimerStarted = false;
 	    last_tkoff_arm_time = 0;
         last_check_ms = now;
@@ -32,6 +35,7 @@ static bool auto_takeoff_check(void)
     // Check for bad GPS
 	/*if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
         // no auto takeoff without GPS lock
+        takeoff_state.takeoff_waiting = false;
         return false;
 	}*/
 
@@ -39,6 +43,7 @@ static bool auto_takeoff_check(void)
     if (!launchTimerStarted &&
         g.takeoff_throttle_min_accel != 0.0 &&
         SpdHgt_Controller->get_VXdot() < g.takeoff_throttle_min_accel) {
+        takeoff_state.takeoff_waiting = true;
         goto no_launch;
     }
 
@@ -46,6 +51,7 @@ static bool auto_takeoff_check(void)
     if (!launchTimerStarted) {
         launchTimerStarted = true;
         last_tkoff_arm_time = now;
+        takeoff_state.takeoff_waiting = false;
         gcs_send_text_fmt(PSTR("Armed AUTO, xaccel = %.1f m/s/s, waiting %.1f sec"), 
                           SpdHgt_Controller->get_VXdot(), wait_time_ms*0.001f);
     }
@@ -53,6 +59,7 @@ static bool auto_takeoff_check(void)
     // Only perform velocity check if not timed out
     if ((now - last_tkoff_arm_time) > wait_time_ms+100U) {
         gcs_send_text_fmt(PSTR("Timeout AUTO"));
+        takeoff_state.takeoff_waiting = false;
         goto no_launch;
     }
 
@@ -61,6 +68,7 @@ static bool auto_takeoff_check(void)
         ahrs.pitch_sensor >= 4500 ||
         abs(ahrs.roll_sensor) > 3000) {
         gcs_send_text_fmt(PSTR("Bad Launch AUTO"));
+        takeoff_state.takeoff_waiting = false;
         goto no_launch;
     }
 
@@ -70,9 +78,11 @@ static bool auto_takeoff_check(void)
         gcs_send_text_fmt(PSTR("Triggered AUTO, GPSspd = %.1f"), gps.ground_speed());
         launchTimerStarted = false;
         last_tkoff_arm_time = 0;
+        takeoff_state.takeoff_waiting = false;
         return true;
     }
 
+    takeoff_state.takeoff_waiting = true;
     // we're not launching yet, but the timer is still going
     return false;
 

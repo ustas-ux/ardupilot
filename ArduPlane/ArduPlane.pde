@@ -573,6 +573,12 @@ static struct {
     takeoff_speed_time_ms : 0
 };
 
+static struct {
+    bool takeoff_waiting:1;
+} takeoff_state = {
+    takeoff_waiting : false
+};
+
 // true if we are in an auto-throttle mode, which means
 // we need to run the speed/height controller
 static bool auto_throttle_mode;

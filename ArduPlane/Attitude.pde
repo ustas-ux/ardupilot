@@ -510,6 +510,7 @@ static void calc_nav_roll()
 static void throttle_slew_limit(int16_t last_throttle)
 {
     uint8_t slewrate = aparm.throttle_slewrate;
+
     if (control_mode==AUTO && auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
         slewrate = g.takeoff_throttle_slewrate;
     }
@@ -595,17 +596,24 @@ static bool suppress_throttle(void)
         return false;
     }
 
-    if (control_mode==AUTO && 
+    if (control_mode==AUTO &&
         auto_state.takeoff_complete == false) {
         if (auto_takeoff_check()) {
-            // we're in auto takeoff 
+            // we're in auto takeoff
             throttle_suppressed = false;
             return false;
         }
+       /* else if (g.takeoff_throttle_prestart > 0)
+        {
+            gcs_send_text_fmt(PSTR("throttle_suppressed = false"));
+            throttle_suppressed = false;
+            return false;
+        }*/
+
         // keep throttle suppressed
         return true;
     }
-    
+
     if (relative_altitude_abs_cm() >= 1000) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
@@ -823,12 +831,18 @@ static void set_servos(void)
         // convert 0 to 100% into PWM
         uint8_t min_throttle = aparm.throttle_min.get();
         uint8_t max_throttle = aparm.throttle_max.get();
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL) {
-            min_throttle = 0;
+
+        if (control_mode == AUTO) {
+            if (flight_stage == AP_SpdHgtControl::FLIGHT_LAND_FINAL)
+            {
+                min_throttle = 0;
+            }
+            if (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF)
+            {
+                max_throttle = takeoff_throttle();
+            }
         }
-        if (control_mode == AUTO && flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) {
-            max_throttle = takeoff_throttle();
-        }
+
         channel_throttle->servo_out = constrain_int16(channel_throttle->servo_out, 
                                                       min_throttle,
                                                       max_throttle);
@@ -842,15 +856,7 @@ static void set_servos(void)
             if (g.throttle_suppress_manual) {
                 // manual pass through of throttle while throttle is suppressed
                 channel_throttle->radio_out = channel_throttle->radio_in;
-			} else if ((control_mode == AUTO) &&
-                       (flight_stage == AP_SpdHgtControl::FLIGHT_TAKEOFF) &&
-					   (g.takeoff_throttle_prestart > 0)) {
-				gcs_send_text_fmt(PSTR("Go takeoff_throttle_prestart"));
-				gcs_send_text_P(SEVERITY_HIGH,PSTR("Go takeoff_throttle_prestart"));
-				channel_throttle->servo_out = constrain_int16(g.takeoff_throttle_prestart,
-																			  min_throttle,
-																			  max_throttle);
-			}
+            }
             else {
                 channel_throttle->calc_pwm();                
             }
@@ -938,9 +944,22 @@ static void set_servos(void)
     RC_Channel_aux::set_servo_out(RC_Channel_aux::k_flap, manual_flap_percent);
 
     if (control_mode >= FLY_BY_WIRE_B) {
-        /* only do throttle slew limiting in modes where throttle
-         *  control is automatic */
-        throttle_slew_limit(last_throttle);
+
+        if ((control_mode == AUTO) && (takeoff_state.takeoff_waiting))
+        {
+            if (g.takeoff_throttle_prestart > 0)
+            {
+                gcs_send_text_fmt(PSTR("takeoff_throttle_prestart"));
+                channel_throttle->radio_out = g.takeoff_throttle_prestart;
+            }
+        }
+        else
+        {
+            /* only do throttle slew limiting in modes where throttle
+            *  control is automatic */
+            gcs_send_text_fmt(PSTR("go takeoff start"));
+            throttle_slew_limit(last_throttle);
+        }
     }
 
     if (control_mode == TRAINING) {
